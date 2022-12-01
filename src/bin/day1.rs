@@ -12,23 +12,25 @@ fn parse_indata(indata: &str) -> Vec<Vec<i32>> {
         .collect()
 }
 
-fn main() {
-    let indata = fs::read_to_string("data/day1.txt").expect("No indata");
-    let parsed = parse_indata(&indata);
-
-    let mut sums: Vec<i32> = parsed
+fn process(indata: &str) -> (i32, i32) {
+    let mut sums: Vec<i32> = parse_indata(&indata)
         .iter()
         .map(|v| v.iter().fold(0, |a, v| a + v))
         .collect();
     sums.sort_by(|a, b| b.cmp(a));
-    println!("Part1: {}", sums[0]);
-    println!("Part2: {}", sums[0..3].iter().sum::<i32>());
+    (sums[0], sums[0..3].iter().sum::<i32>())
+}
+
+fn main() {
+    let indata = fs::read_to_string("data/day1.txt").expect("No indata");
+    let (p1, p2) = process(&indata);
+    println!("Part1: {}", p1);
+    println!("Part2: {}", p2);
 }
 
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use vector_assertions::assert_vec_eq;
 
     #[test]
     fn test_example() {
@@ -49,8 +51,8 @@ mod tests {
         10000
         "#
         };
-        let parsed = super::parse_indata(&test_data);
-        assert_eq!(5, parsed.len());
-        assert_vec_eq!(vec!(5000, 6000), &parsed[2]);
+        let (p1, p2) = super::process(&test_data);
+        assert_eq!(24000, p1);
+        assert_eq!(45000, p2);
     }
 }
