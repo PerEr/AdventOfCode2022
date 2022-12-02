@@ -85,7 +85,8 @@ mod tests {
         let strategy = super::parse_indata(&test_data);
         assert_eq!(3, strategy.len());
 
-        let score = super::process(&strategy);
-        assert_eq!(15, score);
+        assert_eq!(15, super::process1(&strategy));
+
+        assert_eq!(12, super::process2(&strategy));
     }
 }
