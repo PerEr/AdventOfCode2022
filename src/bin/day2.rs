@@ -1,56 +1,77 @@
 use std::fs;
 
-fn parse_indata(indata: &str) -> Vec<(char, char)> {
+fn parse_indata(indata: &str) -> Vec<(Choice, Choice)> {
     indata
         .split("\n")
         .filter(|l| !l.is_empty())
         .map(|b| {
             let mut ch = b.chars();
-            (ch.next().unwrap(), {
-                ch.next().unwrap();
-                ch.next().unwrap()
+            (Choice::from(ch.next().unwrap()), {
+                ch.next();
+                Choice::from(ch.next().unwrap())
             })
         })
         .collect()
 }
 
-fn score(t: &(char, char)) -> i32 {
-    let p = match t {
-        ('A', 'X') => 3,
-        ('B', 'Y') => 3,
-        ('C', 'Z') => 3,
-        ('A', 'Y') => 6,
-        ('B', 'Z') => 6,
-        ('C', 'X') => 6,
-        _ => 0,
-    };
-    p + match t.1 {
-        'X' => 1,
-        'Y' => 2,
-        'Z' => 3,
-        _ => panic!("illegal"),
+#[derive(PartialEq, Clone, Copy, Debug)]
+enum Choice {
+    R,
+    P,
+    S,
+}
+
+impl From<char> for Choice {
+    fn from(ch: char) -> Self {
+        match ch {
+            'A' => Choice::R,
+            'B' => Choice::P,
+            'C' => Choice::S,
+            'X' => Choice::R,
+            'Y' => Choice::P,
+            'Z' => Choice::S,
+            _ => panic!("cant happen"),
+        }
     }
 }
 
-fn calc_choice(t: &(char, char)) -> (char, char) {
-    match t {
-        ('A', 'X') => ('A', 'Z'),
-        ('A', 'Y') => ('A', 'X'),
-        ('A', 'Z') => ('A', 'Y'),
-
-        ('B', 'X') => ('B', 'X'),
-        ('B', 'Y') => ('B', 'Y'),
-        ('B', 'Z') => ('B', 'Z'),
-
-        ('C', 'X') => ('C', 'Y'),
-        ('C', 'Y') => ('C', 'Z'),
-        ('C', 'Z') => ('C', 'X'),
-
-        _ => panic!("cant happen"),
+impl Choice {
+    fn value(&self) -> i32 {
+        match self {
+            Self::R => 1,
+            Self::P => 2,
+            Self::S => 3,
+        }
+    }
+    fn looses_to(&self) -> Self {
+        match self {
+            Self::R => Self::P,
+            Self::P => Self::S,
+            Self::S => Self::R,
+        }
     }
 }
 
-fn process(strategy: &Vec<(char, char)>, f: fn(&(char, char)) -> (char, char)) -> i32 {
+fn score(c: &(Choice, Choice)) -> i32 {
+    c.1.value()
+        + if c.0 == c.1 {
+            3
+        } else if c.0.looses_to() == c.1 {
+            6
+        } else {
+            0
+        }
+}
+
+fn calc_choice(c: &(Choice, Choice)) -> (Choice, Choice) {
+    match c.1 {
+        Choice::R => (c.0, c.0.looses_to().looses_to()),
+        Choice::P => (c.0, c.0),
+        Choice::S => (c.0, c.0.looses_to()),
+    }
+}
+
+fn process(strategy: &Vec<(Choice, Choice)>, f: fn(&(Choice, Choice)) -> (Choice, Choice)) -> i32 {
     strategy
         .iter()
         .map(f)
@@ -67,6 +88,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use indoc::indoc;
 
     #[test]
@@ -78,11 +100,10 @@ mod tests {
         "#
         };
 
-        let strategy = super::parse_indata(&test_data);
+        let strategy = parse_indata(&test_data);
         assert_eq!(3, strategy.len());
 
-        assert_eq!(15, super::process(&strategy, |t| t.clone()));
-
-        assert_eq!(12, super::process(&strategy, super::calc_choice));
+        assert_eq!(15, process(&strategy, |t| t.clone()));
+        assert_eq!(12, process(&strategy, calc_choice));
     }
 }
