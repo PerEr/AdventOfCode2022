@@ -50,14 +50,10 @@ fn calc_choice(t: &(char, char)) -> (char, char) {
     }
 }
 
-fn process1(strategy: &Vec<(char, char)>) -> i32 {
-    strategy.iter().map(|t| score(&t)).fold(0, |a, v| a + v)
-}
-
-fn process2(strategy: &Vec<(char, char)>) -> i32 {
+fn process(strategy: &Vec<(char, char)>, f: fn(&(char, char)) -> (char, char)) -> i32 {
     strategy
         .iter()
-        .map(|t| calc_choice(&t))
+        .map(f)
         .map(|t| score(&t))
         .fold(0, |a, v| a + v)
 }
@@ -65,8 +61,8 @@ fn process2(strategy: &Vec<(char, char)>) -> i32 {
 fn main() {
     let indata = fs::read_to_string("data/day2.txt").expect("No indata");
     let strategy = parse_indata(&indata);
-    println!("Part1: {}", process1(&strategy));
-    println!("Part2: {}", process2(&strategy));
+    println!("Part1: {}", process(&strategy, |t| t.clone()));
+    println!("Part2: {}", process(&strategy, calc_choice));
 }
 
 #[cfg(test)]
@@ -85,8 +81,8 @@ mod tests {
         let strategy = super::parse_indata(&test_data);
         assert_eq!(3, strategy.len());
 
-        assert_eq!(15, super::process1(&strategy));
+        assert_eq!(15, super::process(&strategy, |t| t.clone()));
 
-        assert_eq!(12, super::process2(&strategy));
+        assert_eq!(12, super::process(&strategy, super::calc_choice));
     }
 }
