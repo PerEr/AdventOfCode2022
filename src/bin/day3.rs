@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::{collections::HashSet, fs};
 
 fn to_priority(item: u8) -> i32 {
@@ -28,10 +29,19 @@ fn process1(data: &Vec<(HashSet<i32>, HashSet<i32>)>) -> i32 {
         .sum()
 }
 
+fn process2(data: &Vec<(HashSet<i32>, HashSet<i32>)>) -> i32 {
+    data.iter()
+        .map(|(l, r)| l | r)
+        .tuples()
+        .map(|(s1, s2, s3)| (&(&s1 & &s2) & &s3).into_iter().next().unwrap())
+        .sum()
+}
+
 fn main() {
     let indata = fs::read_to_string("data/day3.txt").expect("No indata");
     let data = parse_indata(&indata);
     println!("Part1: {:?}", process1(&data));
+    println!("Part2: {:?}", process2(&data));
 }
 
 #[cfg(test)]
@@ -57,6 +67,8 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        // let data = parse_indata1(&TEST_DATA);
+        let data = parse_indata(&TEST_DATA);
+        let score = process2(&data);
+        assert_eq!(70, score);
     }
 }

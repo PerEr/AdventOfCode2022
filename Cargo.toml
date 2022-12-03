@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 indoc = "1.0.7"
+itertools = "0.10.5"
 
 [dev-dependencies]
 vector_assertions = "0.1.0"
+itertools = "0.10.5"
