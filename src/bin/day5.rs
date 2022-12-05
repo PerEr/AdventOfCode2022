@@ -70,11 +70,28 @@ fn play_commands(stacks: &Vec<Vec<char>>, commands: &Vec<(usize, usize, usize)>)
     }
     ss.iter().map(|s| s.last().unwrap()).collect()
 }
+
+// (nr, from, to)
+fn play_commands2(stacks: &Vec<Vec<char>>, commands: &Vec<(usize, usize, usize)>) -> String {
+    let mut ss = stacks.clone();
+    for cmd in commands.iter() {
+        let mut tmp = vec![];
+        for _ in 0..cmd.0 {
+            tmp.push(ss[cmd.1 - 1].pop().unwrap());
+        }
+        tmp.reverse();
+        for cc in tmp {
+            ss[cmd.2 - 1].push(cc);
+        }
+    }
+    ss.iter().map(|s| s.last().unwrap()).collect()
+}
+
 fn main() {
     let indata = fs::read_to_string("data/day5.txt").expect("No indata");
     let (stacks, commands) = parse_indata(&indata);
     println!("Part1: {:?}", play_commands(&stacks, &commands));
-    // println!("Part2: {:?}", process(&data, some_overlap));
+    println!("Part2: {:?}", play_commands2(&stacks, &commands));
 }
 
 #[cfg(test)]
@@ -103,5 +120,9 @@ mod tests {
     }
 
     #[test]
-    fn test_part2() {}
+    fn test_part2() {
+        let (stacks, commands) = parse_indata(&TEST_DATA);
+        let result = play_commands2(&stacks, &commands);
+        assert_eq!("MCD", result);
+    }
 }
