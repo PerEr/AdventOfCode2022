@@ -59,10 +59,21 @@ fn parse_indata<'a>(indata: &'a str) -> (Vec<Vec<char>>, Vec<(usize, usize, usiz
     )
 }
 
+// (nr, from, to)
+fn play_commands(stacks: &Vec<Vec<char>>, commands: &Vec<(usize, usize, usize)>) -> String {
+    let mut ss = stacks.clone();
+    for cmd in commands.iter() {
+        for _ in 0..cmd.0 {
+            let cr = ss[cmd.1 - 1].pop().unwrap();
+            ss[cmd.2 - 1].push(cr);
+        }
+    }
+    ss.iter().map(|s| s.last().unwrap()).collect()
+}
 fn main() {
     let indata = fs::read_to_string("data/day5.txt").expect("No indata");
-    let (stack, moves) = parse_indata(&indata);
-    println!("Part1: {:?}", stack);
+    let (stacks, commands) = parse_indata(&indata);
+    println!("Part1: {:?}", play_commands(&stacks, &commands));
     // println!("Part2: {:?}", process(&data, some_overlap));
 }
 
@@ -86,8 +97,9 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let (_stack, _moves) = parse_indata(&TEST_DATA);
-        let x = 1;
+        let (stacks, commands) = parse_indata(&TEST_DATA);
+        let result = play_commands(&stacks, &commands);
+        assert_eq!("CMZ", result);
     }
 
     #[test]
