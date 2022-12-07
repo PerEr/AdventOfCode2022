@@ -1,50 +1,61 @@
+use std::collections::HashMap;
 use std::fs;
-use nom::{
-    bytes::complete::tag,
-    character::{complete::{anychar, digit1}},
-    combinator::{map, map_res},
-    multi::separated_list1,
-    sequence::delimited,
-    IResult, Parser,
-};
 
-#[derive(Debug)]
-struct Command {
-    line: String,
-}
+fn parse_indata(input: &str) -> HashMap<Vec<&str>, usize> {
+    let mut paths: Vec<&str> = Vec::new();
 
-impl From<&str> for Command {
-    fn from(str: &str) -> Self {
-        Self { line: String::from(str) }
-    }
-}
-
-fn parse_line(line: &str) -> Command {
-    Command { line: String::from(line) }
-}
-
-fn parse_indata(indata: &str) -> Vec<Command> {
-    indata
-        .split("\n")
+    input
+        .lines()
         .filter(|l| !l.is_empty())
-        .map(parse_line)
-        .collect()
+        .fold(HashMap::new(), |mut sizes, line| {
+            let mut parts = line.split_whitespace();
+            match (parts.next(), parts.next(), parts.next()) {
+                (Some("$"), Some("cd"), Some("..")) => {
+                    paths.pop();
+                }
+                (Some("$"), Some("cd"), Some(dir)) => {
+                    paths.push(dir);
+                }
+                (Some("$"), _, _) => return sizes,
+                (Some("dir"), _, _) => return sizes,
+                (Some(size), _, _) => {
+                    (0..paths.len())
+                        .map(|i| paths[0..=i].to_vec())
+                        .for_each(|subpath| {
+                            *sizes.entry(subpath).or_insert(0) += size.parse::<usize>().unwrap();
+                        });
+                }
+                _ => return sizes,
+            };
+            sizes
+        })
+}
+
+fn calc_part1(sizes: &HashMap<Vec<&str>, usize>, lim: usize) -> usize {
+    sizes.values().filter(|&&v| v <= lim).sum()
+}
+
+fn calc_part2(sizes: &HashMap<Vec<&str>, usize>, tot: usize, free: usize) -> usize {
+    *sizes
+        .values()
+        .filter(|&&v| v >= sizes[&vec!["/"]] + &free - tot)
+        .min()
+        .unwrap()
 }
 
 fn main() {
     let indata = fs::read_to_string("data/day7.txt").expect("No indata");
-    let commands = parse_indata(&indata);
-    println!("{:?}", &commands);
+    let sizes = parse_indata(&indata);
+    println!("Part1: {}", calc_part1(&sizes, 100000));
+    println!("Part2: {}", calc_part2(&sizes, 70000000, 30000000));
 }
 
 #[cfg(test)]
 mod tests {
-    use indoc::indoc;
     use super::*;
+    use indoc::indoc;
 
-    #[test]
-    fn test_example() {
-        let test_data = indoc! {r#"
+    const TEST_DATA: &'static str = indoc! {r#"
         $ cd /
         $ ls
         dir a
@@ -69,9 +80,17 @@ mod tests {
         5626152 d.ext
         7214296 k
         "#
-        };
-        let indata = fs::read_to_string("data/day7.txt").expect("No indata");
-        let commands = parse_indata(&indata);
-    
+    };
+
+    #[test]
+    fn test_part1() {
+        let sizes = parse_indata(&TEST_DATA);
+        assert_eq!(95437, calc_part1(&sizes, 100000));
+    }
+
+    #[test]
+    fn test_part2() {
+        let sizes = parse_indata(&TEST_DATA);
+        assert_eq!(24933642, calc_part2(&sizes, 70000000, 30000000));
     }
 }
