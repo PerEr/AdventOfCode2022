@@ -1,10 +1,11 @@
-use std::fs;
+use std::{fs, cmp::max};
 
-type Grid = Vec<Vec<(i32, bool)>>;
+type Cell = (i32, bool);
+type Grid = Vec<Vec<Cell>>;
 
 fn parse_indata(input: &str) -> Grid {
     let mut grid = Vec::new();
-    let to_cell = |c: char| -> (i32, bool) {
+    let to_cell = |c: char| -> Cell {
         (c.to_digit(10).unwrap() as i32, false)
     };
     for line in input.split("\n") {
@@ -19,7 +20,7 @@ fn parse_indata(input: &str) -> Grid {
     grid
 }
 
-fn set_col_visibility(row: &mut Vec<(i32,bool)>, col_index: fn(cols: usize, ix:usize) -> usize) {
+fn set_col_visibility(row: &mut Vec<Cell>, col_index: fn(cols: usize, ix:usize) -> usize) {
     let mut threshold: i32 = -1;
     for index in 0..row.len() {
         let col = col_index(row.len(), index);
@@ -40,6 +41,7 @@ fn set_row_visibility(grid: &mut Grid, col: usize, row_index: fn(rows: usize, ix
         }
     }
 }
+
 fn set_visibility(grid: &mut Grid) {
     let rows = grid.len();
 
@@ -54,6 +56,43 @@ fn set_visibility(grid: &mut Grid) {
     }
 }
 
+fn count_trees(grid: &Grid, row: usize, col: usize, dr: i32, dc: i32) -> usize {
+    let mut r = row as i32;
+    let mut c = col as i32;
+    let mut count = 0;
+    loop {    
+        r = r + dr;
+        c = c + dc;
+        if r >= 0 && c >= 0 && r < grid.len() as i32 && c < grid[r as usize].len() as i32 {    
+            let h = grid[r as usize][c as usize].0;
+            count = count + 1;
+            if h >= grid[row][col].0 {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    count
+}
+
+fn calc_score(grid: &Grid, row: usize, col: usize) -> usize {
+    count_trees(grid, row, col, -1, 0) * 
+    count_trees(grid, row, col, 1, 0) * 
+    count_trees(grid, row, col, 0, 1) * 
+    count_trees(grid, row, col, 0, -1) 
+}
+
+fn get_max_score(grid: &Grid) -> usize {
+    let mut max_score = 0;
+    for row in 0..grid.len() {
+        for col in 0..grid[row].len() {
+            max_score = max(max_score, calc_score(grid, row, col));
+        }
+    }
+    max_score
+}
+
 fn count_visible(grid: & Grid) -> usize {
     grid.iter().flatten().filter(|c| c.1).count()
 }
@@ -63,6 +102,7 @@ fn main() {
     let mut grid = parse_indata(&indata);
     set_visibility(&mut grid);
     println!("Part1: {:?}", count_visible(&grid));
+    println!("Part2: {:?}", get_max_score(&grid));
 }
 
 #[cfg(test)]
@@ -80,10 +120,16 @@ mod tests {
     };
 
     #[test]
-    fn test_example() {
+    fn test_part1() {
         let mut grid = parse_indata(&TEST_DATA);
         set_visibility(&mut grid);
         assert_eq!(21, count_visible(&grid));
+    }
+
+    #[test]
+    fn test_part2() {
+        let grid = parse_indata(&TEST_DATA);
+        assert_eq!(8, get_max_score(&grid));
     }
 
 }
