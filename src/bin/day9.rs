@@ -40,6 +40,15 @@ fn next_coord(head: &Coord, tail: &Coord) -> Coord {
         Coord {x: tail.x + dx.signum(), y: tail.y + dy.signum() }
     }
 }
+fn modify_knots(nr: i32, knots: &mut Vec<Coord>, f: fn(c:Coord, nr: i32) -> Coord, res: &mut HashSet<Coord>) {
+    for _ in 0..nr.abs() {
+        knots[0] =f(knots[0], nr);
+        for ix in 1..knots.len() {
+            knots[ix] = next_coord(&knots[ix-1], &knots[ix]);
+        }
+        res.insert(knots[knots.len()-1].clone());
+    }
+}
 
 fn play_commands(commands: &Vec<Command>, sz: usize) -> HashSet<Coord> {
     let mut res: HashSet<Coord> = HashSet::new();
@@ -49,22 +58,14 @@ fn play_commands(commands: &Vec<Command>, sz: usize) -> HashSet<Coord> {
     for cmd in commands {
         match cmd {
             Command::Vert(nr) => {
-                for _ in 0..nr.abs() {
-                    knots[0].y = knots[0].y + nr.signum();
-                    for ix in 1..knots.len() {
-                        knots[ix] = next_coord(&knots[ix-1], &knots[ix]);
-                    }
-                    res.insert(knots[knots.len()-1].clone());
-                }
+                modify_knots(*nr, &mut knots, |c, nr| 
+                    Coord {x : c.x, y: c.y + nr.signum()}
+                , &mut res);
             },
             Command::Horiz(nr) => {
-                for _ in 0..nr.abs() {
-                    knots[0].x = knots[0].x + nr.signum();
-                    for ix in 1..knots.len() {
-                        knots[ix] = next_coord(&knots[ix-1], &knots[ix]);
-                    }
-                    res.insert(knots[knots.len()-1].clone());
-                }
+                modify_knots(*nr, &mut knots, |c, nr| 
+                    Coord {x : c.x  + nr.signum(), y: c.y}
+                , &mut res);
             },
         };
     }
