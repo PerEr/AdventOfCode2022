@@ -29,6 +29,18 @@ struct Coord {
     y: i32,
 }
 
+fn next_coord(head: &Coord, tail: &Coord) -> Coord {
+    let dx = head.x - tail.x;
+    let dy = head.y - tail.y;
+    return if dy.abs() > 1 {
+        Coord { x: head.x, y: tail.y + dy.signum()}
+    } else if dx.abs() > 1 {
+        Coord { x: tail.x + dx.signum(), y: head.y}
+    } else {
+        Coord {..*tail}
+    }
+}
+
 fn play_commands(commands: &Vec<Command>) -> HashSet<Coord> {
     let mut res: HashSet<Coord> = HashSet::new();
     let mut head = Coord {x: 0, y:0};
@@ -37,23 +49,15 @@ fn play_commands(commands: &Vec<Command>) -> HashSet<Coord> {
         match cmd {
             Command::Vert(nr) => {
                 for _ in 0..nr.abs() {
-                    let oldy = head.y;
                     head.y = head.y + nr.signum();
-                    if (head.y - tail.y).abs() > 1 {
-                        tail.y = oldy;
-                        tail.x = head.x;
-                    }
+                    tail = next_coord(&head, &tail);
                     res.insert(tail.clone());
                 }
             },
             Command::Horiz(nr) => {
                 for _ in 0..nr.abs() {
-                    let oldx = head.x;
                     head.x = head.x + nr.signum();
-                    if (head.x - tail.x).abs() > 1 {
-                        tail.x = oldx;
-                        tail.y = head.y;
-                    }
+                    tail = next_coord(&head, &tail);
                     res.insert(tail.clone());
                 }
             },
