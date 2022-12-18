@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        const len: usize = 14;
+        let len: usize = 14;
         assert_eq!(19, find_marker_index("mjqjpqmgbljsphdztnvjfqwrcgsmlb", len));
         assert_eq!(23, find_marker_index("bvwbjplbgvbhsrlpgdmjqwftvncz", len));
         assert_eq!(23, find_marker_index("nppdvjthqldpwncqszvftbrmjlhg", len));
