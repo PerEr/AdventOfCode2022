@@ -23,7 +23,7 @@ fn parse_indata(indata: &str) -> Vec<Command> {
         .collect()
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 struct Coord {
     x: i32,
     y: i32,
@@ -32,33 +32,38 @@ struct Coord {
 fn next_coord(head: &Coord, tail: &Coord) -> Coord {
     let dx = head.x - tail.x;
     let dy = head.y - tail.y;
-    return if dy.abs() > 1 {
-        Coord { x: head.x, y: tail.y + dy.signum()}
-    } else if dx.abs() > 1 {
-        Coord { x: tail.x + dx.signum(), y: head.y}
+    let stay = dx.abs() <=1 && dy.abs() <= 1;
+
+    return if stay {
+        Coord { ..*tail }
     } else {
-        Coord {..*tail}
+        Coord {x: tail.x + dx.signum(), y: tail.y + dy.signum() }
     }
 }
 
-fn play_commands(commands: &Vec<Command>) -> HashSet<Coord> {
+fn play_commands(commands: &Vec<Command>, sz: usize) -> HashSet<Coord> {
     let mut res: HashSet<Coord> = HashSet::new();
-    let mut head = Coord {x: 0, y:0};
-    let mut tail = Coord {x: 0, y:0};
+    let mut knots: Vec<Coord> = Vec::new();
+    knots.resize(sz, Coord {x:0, y:0});
+
     for cmd in commands {
         match cmd {
             Command::Vert(nr) => {
                 for _ in 0..nr.abs() {
-                    head.y = head.y + nr.signum();
-                    tail = next_coord(&head, &tail);
-                    res.insert(tail.clone());
+                    knots[0].y = knots[0].y + nr.signum();
+                    for ix in 1..knots.len() {
+                        knots[ix] = next_coord(&knots[ix-1], &knots[ix]);
+                    }
+                    res.insert(knots[knots.len()-1].clone());
                 }
             },
             Command::Horiz(nr) => {
                 for _ in 0..nr.abs() {
-                    head.x = head.x + nr.signum();
-                    tail = next_coord(&head, &tail);
-                    res.insert(tail.clone());
+                    knots[0].x = knots[0].x + nr.signum();
+                    for ix in 1..knots.len() {
+                        knots[ix] = next_coord(&knots[ix-1], &knots[ix]);
+                    }
+                    res.insert(knots[knots.len()-1].clone());
                 }
             },
         };
@@ -68,9 +73,8 @@ fn play_commands(commands: &Vec<Command>) -> HashSet<Coord> {
 fn main() {
     let indata = fs::read_to_string("data/day9.txt").expect("No indata");
     let commands = parse_indata(&indata);
-    let res = play_commands(&commands);
-
-    println!("Part1: {:?}", res.len());
+    println!("Part1: {:?}", play_commands(&commands, 2).len());
+    println!("Part2: {:?}", play_commands(&commands, 10).len());
 }
 
 #[cfg(test)]
@@ -78,23 +82,41 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
-    R 4
-    U 4
-    L 3
-    D 1
-    R 4
-    D 1
-    L 5
-    R 2
-    "#
-    };
 
     #[test]
     fn test_part1() {
-        let commands = parse_indata(&TEST_DATA);
-        let res = play_commands(&commands);
+        let test_data: &'static str = indoc! {r#"
+        R 4
+        U 4
+        L 3
+        D 1
+        R 4
+        D 1
+        L 5
+        R 2
+        "#
+        };
+            let commands = parse_indata(&test_data);
+        let res = play_commands(&commands, 2);
         assert_eq!(13, res.len());
+    }
+
+    #[test]
+    fn test_part2() {
+        let test_data: &'static str = indoc! {r#"
+        R 5
+        U 8
+        L 8
+        D 3
+        R 17
+        D 10
+        L 25
+        U 20
+        "#
+        };
+        let commands = parse_indata(&test_data);
+        let res = play_commands(&commands, 10);
+        assert_eq!(36, res.len());
     }
 
 }
