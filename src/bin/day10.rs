@@ -51,17 +51,19 @@ fn signal_strength(xs: &Vec<i32>) -> i32 {
     res
 }
 
-fn render_screen(xs: &Vec<i32>) -> String {
-    let mut res = String::new();
+fn render_screen(xs: &Vec<i32>) -> Vec<String> {
+    let mut res: Vec<String> = vec!();
+    let mut line = String::new();
     let mut col = 0;
     let mut nextx = 1;
     for x in xs {
         let c: char = if col >= nextx-1 && col <= nextx+1 { '#' } else { '.' };
-        res.push(c);
+        line.push(c);
         col += 1;
         if col == 40 {
             col = 0;
-            res.push('\n');
+            res.push(line.clone());
+            line.clear();
         }
         nextx = x.clone();
     }
@@ -73,7 +75,10 @@ fn main() {
     let commands = parse_indata(&indata);
     let xs = play_commands(&commands);
     println!("Part1: {:?}", signal_strength(&xs));
-    println!("Part2: \n{:?}", render_screen(&xs));
+    println!("Part2:");
+    for l in render_screen(&xs) {
+        println!("{l}");
+    }
 }
 
 #[cfg(test)]
@@ -252,11 +257,10 @@ mod tests {
             ####....####....####....####....####....
             #####.....#####.....#####.....#####.....
             ######......######......######......####
-            #######.......#######.......#######.....
-            "#
+            #######.......#######.......#######....."#
         };
 
-        assert_eq!(test_data, screen);
+        assert_eq!(test_data, screen.join("\n"));
     }
 
 }
