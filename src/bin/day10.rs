@@ -50,11 +50,30 @@ fn signal_strength(xs: &Vec<i32>) -> i32 {
     }
     res
 }
+
+fn render_screen(xs: &Vec<i32>) -> String {
+    let mut res = String::new();
+    let mut col = 0;
+    let mut nextx = 1;
+    for x in xs {
+        let c: char = if col >= nextx-1 && col <= nextx+1 { '#' } else { '.' };
+        res.push(c);
+        col += 1;
+        if col == 40 {
+            col = 0;
+            res.push('\n');
+        }
+        nextx = x.clone();
+    }
+    res
+}
+
 fn main() {
     let indata = fs::read_to_string("data/day10.txt").expect("No indata");
     let commands = parse_indata(&indata);
-    let res = play_commands(&commands);
-    println!("Part1: {:?}", signal_strength(&res));
+    let xs = play_commands(&commands);
+    println!("Part1: {:?}", signal_strength(&xs));
+    println!("Part2: \n{:?}", render_screen(&xs));
 }
 
 #[cfg(test)]
@@ -63,9 +82,7 @@ mod tests {
     use indoc::indoc;
 
 
-    #[test]
-    fn test_part1() {
-        let test_data: &'static str = indoc! {r#"
+    const TEST_DATA: &'static str = indoc! {r#"
         addx 15
         addx -11
         addx 6
@@ -213,12 +230,33 @@ mod tests {
         noop
         noop
         "#
-        };
-        let commands = parse_indata(&test_data);
+    };
+
+    #[test]
+    fn test_part1() {
+        let commands = parse_indata(&TEST_DATA);
         let xs = play_commands(&commands);
         let res = signal_strength(&xs);
         assert_eq!(13140, res);
     }
 
+    #[test]
+    fn test_part2() {
+        let commands = parse_indata(&TEST_DATA);
+        let xs = play_commands(&commands);
+        let screen = render_screen(&xs);
+
+        let test_data: &'static str = indoc! {r#"
+            ##..##..##..##..##..##..##..##..##..##..
+            ###...###...###...###...###...###...###.
+            ####....####....####....####....####....
+            #####.....#####.....#####.....#####.....
+            ######......######......######......####
+            #######.......#######.......#######.....
+            "#
+        };
+
+        assert_eq!(test_data, screen);
+    }
 
 }
