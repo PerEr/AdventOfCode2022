@@ -1,4 +1,5 @@
 use std::{fs, collections::{HashMap, hash_map::Entry}};
+use itertools::Itertools;
 use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -40,8 +41,9 @@ fn parse_indata(indata: &str) -> (Vec<Monkey>, HashMap<i32, Vec<i32>>) {
         (monkeys,item_map)
 }
 
-fn play_once(monkeys: &Vec<Monkey>, items: &HashMap<i32, Vec<i32>>) -> HashMap<i32, Vec<i32>> {
+fn play_once(monkeys: &Vec<Monkey>, items: &HashMap<i32, Vec<i32>>, inspections: &HashMap<i32, i32>) -> (HashMap<i32, Vec<i32>>, HashMap<i32, i32>) {
     let mut next_items: HashMap<i32, Vec<i32>> = items.clone();
+    let mut next_inspections: HashMap<i32, i32> = inspections.clone();
     for m in monkeys {
         let changes: Vec<(i32, i32)> = if let Some(it) = next_items.get(&m.id) {
             let mut res: Vec<(i32, i32)> = vec!(); 
@@ -60,6 +62,10 @@ fn play_once(monkeys: &Vec<Monkey>, items: &HashMap<i32, Vec<i32>>) -> HashMap<i
                     m.monkey_iffalse
                 };
                 res.push((monkey_id, worry));
+                match next_inspections.get(&m.id) {
+                    Some(count) => { next_inspections.insert(m.id, count + 1); }
+                    None => { next_inspections.insert(m.id, 1); }
+                }
             }
             res
         } else {
@@ -73,29 +79,33 @@ fn play_once(monkeys: &Vec<Monkey>, items: &HashMap<i32, Vec<i32>>) -> HashMap<i
             }
         }
     }
-    next_items
+    (next_items, next_inspections)
 }
 
-fn play(monkeys: &Vec<Monkey>, items: &HashMap<i32, Vec<i32>>, nr: usize) -> HashMap<i32, Vec<i32>> {
+fn play(monkeys: &Vec<Monkey>, items: &HashMap<i32, Vec<i32>>, nr: usize) -> (HashMap<i32, Vec<i32>>, HashMap<i32,i32>) {
     let mut mut_items = items.clone();
+    let mut mut_inspections: HashMap<i32, i32> = HashMap::new();
     for _ in 0..nr {
-        mut_items = play_once(&monkeys, &mut_items);
+        (mut_items, mut_inspections) = play_once(&monkeys, &mut_items, &mut_inspections);
     }
-    mut_items
+    (mut_items, mut_inspections)
+}
+
+fn calc_monkey_business(inspections: &HashMap<i32, i32>) -> i32 {
+    inspections.values().copied().sorted().rev().take(2).fold(1i32, |acc, val| acc * val)
 }
 
 fn main() {
     let indata = fs::read_to_string("data/day11.txt").expect("No indata");
     let (monkeys, items) = parse_indata(&indata);
-    let new_items = play(&monkeys, &items, 20);
-    println!("{:?}", new_items);
+    let (_, inspections) = play(&monkeys, &items, 20);
+    println!("Part1: {:?}", calc_monkey_business(&inspections));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use indoc::indoc;
-
 
     const TEST_DATA: &'static str = indoc! {r#"
         Monkey 0:
@@ -131,10 +141,11 @@ mod tests {
     #[test]
     fn test_part1() {
         let (monkeys, items) = parse_indata(&TEST_DATA);
-        let next_items = play(&monkeys, &items, 20);
-        assert_eq!(2, next_items.len());
-        assert_eq!(vec!(10, 12, 14, 26, 34), next_items[&0]);
-        assert_eq!(vec!(245, 93, 53, 199, 115), next_items[&1]);
+        let (items, inspections) = play(&monkeys, &items, 20);
+        assert_eq!(2, items.len());
+        assert_eq!(vec!(10, 12, 14, 26, 34), items[&0]);
+        assert_eq!(vec!(245, 93, 53, 199, 115), items[&1]);
+        assert_eq!(10605, calc_monkey_business(&inspections));
     }
 
 
