@@ -79,25 +79,19 @@ fn solve_maze(grid: &Grid, start: &Pos, end: &Pos) -> HashMap<Pos, (Pos, i32)> {
     solution.insert(start.clone(), (start.clone(), 0));
 
     while let Some((pos, path_len)) = to_visit.pop_front() {
-        println!("Examining {:?}", pos);
         let height = grid.get(&pos);
         for p in grid.neighbours(&pos) {
             let n_height = grid.get(&p);
             if n_height - height <= 1 {
                 let next_path_len = path_len + 1;
                 if solution.get(&p).map(|(_,l)| l).unwrap_or(&i32::max_value()) <= &next_path_len {
-                    println!("neighbour {:?} has solution", p);
                     continue;
                 }
-                println!("neighbour {:?} solution found", p);
                 solution.insert(p.clone(), (pos.clone(), next_path_len));
                 to_visit.push_back((p.clone(), next_path_len));
                 if pos == *end {
-                    println!("neighbour {:?} is the target", p);
                     break;
                 }
-            } else {
-                println!("Unreachable neighbour {:?}", p);
             }
         }
     }
