@@ -6,7 +6,7 @@ fn char_to_value(c: char) -> i32 {
     (c as i32) - a
 }
 
-#[derive(Debug, PartialEq, Clone, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Copy)]
 struct Pos {
     r: i32,
     c: i32,
@@ -58,15 +58,16 @@ fn parse_indata(indata: &str) -> Grid {
     Grid::from(indata.lines().map(|l| l.chars().map(char_to_value).collect()).collect())
 }
 
-fn find_char(grid: &Grid, ch: i32) -> Option<Pos> {
+fn find_char(grid: &Grid, ch: i32) -> Vec<Pos> {
+    let mut res: Vec<Pos> = Vec::new();
     for r in 0..grid.rows {
         for c in 0..grid.cols {
             if grid.get(&Pos::from(r,c)) == ch {
-                return Some(Pos::from(r,c));
+                res.push(Pos::from(r,c));
             }
         }
     }
-    None
+    res
 }
 
 
@@ -101,8 +102,8 @@ fn solve_maze(grid: &Grid, start: &Pos, end: &Pos) -> HashMap<Pos, (Pos, i32)> {
 fn main() {
     let indata = fs::read_to_string("data/day12.txt").expect("No indata");
     let mut grid = parse_indata(&indata);
-    let start = find_char(&grid, char_to_value('S')).unwrap();
-    let end = find_char(&grid, char_to_value('E')).unwrap();
+    let start = find_char(&grid, char_to_value('S'))[0];
+    let end = find_char(&grid, char_to_value('E'))[0];
     grid.set(&start, char_to_value('a'));
     grid.set(&end, char_to_value('z'));
 
@@ -130,8 +131,8 @@ mod tests {
     #[test]
     fn test_part1() {
         let mut grid = parse_indata(&TEST_DATA);
-        let start = find_char(&grid, char_to_value('S')).unwrap();
-        let end = find_char(&grid, char_to_value('E')).unwrap();
+        let start = find_char(&grid, char_to_value('S'))[0];
+        let end = find_char(&grid, char_to_value('E'))[0];
         assert_eq!(Pos::from(0,0), start);
         assert_eq!(Pos::from(2,5), end);
 
