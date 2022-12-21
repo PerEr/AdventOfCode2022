@@ -104,13 +104,28 @@ fn main() {
     let mut grid = parse_indata(&indata);
     let start = find_char(&grid, char_to_value('S'))[0];
     let end = find_char(&grid, char_to_value('E'))[0];
+
     grid.set(&start, char_to_value('a'));
     grid.set(&end, char_to_value('z'));
 
-    let solution = solve_maze(&grid, &start, &end);
-    let res = solution.get(&end).unwrap();
+    {
+        let solution = solve_maze(&grid, &start, &end);
+        let res = solution.get(&end).unwrap();
+        println!("Part1: {:?}", res);
+    }
 
-    println!("Part1: {:?}", res);
+    {
+        let mut res: Vec<(Pos, i32)> = find_char(&grid, char_to_value('a')).into_iter().map(|sp| {
+            let solution = solve_maze(&grid, &sp, &end);
+            if let Some((_, dist)) = solution.get(&end) {
+                Some((sp, *dist))
+            } else {
+                None
+            }
+        }).filter(|op| op.is_some()).map(|op| op.unwrap()).collect();
+        res.sort_by(|a,b| a.1.cmp(&b.1));
+        println!("Part2: {:?}", res[0]);
+    }
 }
 
 // https://github.com/tumdum/aoc2022/blob/main/src/day12.rs
@@ -143,7 +158,27 @@ mod tests {
         let res = solution.get(&end).unwrap();
 
         assert_eq!(31, res.1);
+    }
 
+    #[test]
+    fn test_part2() {
+        let mut grid = parse_indata(&TEST_DATA);
+        let start = find_char(&grid, char_to_value('S'))[0];
+        let end = find_char(&grid, char_to_value('E'))[0];
+        assert_eq!(Pos::from(0,0), start);
+        assert_eq!(Pos::from(2,5), end);
+
+        grid.set(&start, char_to_value('a'));
+        grid.set(&end, char_to_value('z'));
+
+        let mut res: Vec<(Pos, i32)> = find_char(&grid, char_to_value('a')).into_iter().map(|sp| {
+            let solution = solve_maze(&grid, &sp, &end);
+            let (_, dist) = solution.get(&end).unwrap();
+            (sp, *dist)
+        }).collect();
+        res.sort_by(|a,b| a.1.cmp(&b.1));
+
+        assert_eq!(29, res[0].1);
     }
 
 }
