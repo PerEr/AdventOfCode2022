@@ -19,7 +19,7 @@ struct Cave {
 
 impl Cave {
     fn get(&self, p: &(i32, i32)) -> Option<&Content> {
-        self.data.get(p)
+        if p.1 < self.y_max + 2 { self.data.get(p) } else { Some(&Content::Rock) }
     }
 
     fn from(lst: &Vec<Vec<(i32,i32)>>) -> Self {
@@ -90,7 +90,7 @@ fn draw_cave(cave: &Cave) -> Vec<String> {
         bottom_right = (bottom_right.0.max(p.0), bottom_right.1.max(p.1));
     }
 
-    for y in top_left.1..=bottom_right.1+4 {
+    for y in top_left.1..=bottom_right.1+3 {
         let mut line = String::from("");
         for x in top_left.0..=bottom_right.0 {
             line.push(match cave.get(&(x,y)) {
@@ -147,14 +147,18 @@ fn find_resting_pos(cave: &Cave, pos: &(i32, i32)) -> SearchResult {
 
 fn drop_sand(cave: &mut Cave) -> SearchResult {
 
-    let p = find_resting_pos(&cave, &START);
+    let mut p = find_resting_pos(&cave, &START);
     match &p {
         &SearchResult::Pos(p) => { 
             cave.data.insert(p, Content::Sand); 
+            if p == START {
+                SearchResult::Done
+            } else {
+                SearchResult::Pos(p)
+            }
         },
-        _ => {},
+        _ => p,
     }
-    p
 }
 
 fn main() {
@@ -166,14 +170,16 @@ fn main() {
     let mut count = 0;
     loop {
         let res = drop_sand(&mut cave);
-        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-        print_cave(&cave);
+        if count % 20 == 0 {
+            print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+            print_cave(&cave);
+        }
         if res == SearchResult::Done {
             break;
         } 
         count += 1;
     }
-    println!("Part1: {count}");
+    println!("Part2: {}", count+1);
 }
 
 // https://github.com/tumdum/aoc2022/blob/main/src/day12.rs
