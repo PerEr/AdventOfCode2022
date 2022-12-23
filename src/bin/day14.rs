@@ -3,13 +3,51 @@ use std::{fs, collections::HashMap };
 use nom::{
     bytes::complete::tag,
     character::complete::{digit1},
-    IResult, combinator::{map_res}, sequence::{tuple}, multi::{separated_list0, many0}, And,
+    IResult, combinator::{map_res}, sequence::{tuple}, multi::{separated_list0, many0},
 };
 
 #[derive(Debug, PartialEq)]
 enum Content {
     Rock,
     Sand,
+}
+
+struct Cave {
+    y_max: i32,
+    data: HashMap<(i32,i32), Content>,
+}
+
+impl Cave {
+    fn get(&self, p: &(i32, i32)) -> Option<&Content> {
+        self.data.get(p)
+    }
+
+    fn from(lst: &Vec<Vec<(i32,i32)>>) -> Self {
+        let mut data = HashMap::new();
+        for l in lst {
+            for ss in l.windows(2) {
+                let mut x = ss[0].0;
+                let mut y = ss[0].1;
+                let dx = (ss[1].0 - x).signum();
+                let dy = (ss[1].1 - y).signum();
+                assert!(dx == 0 || dy == 0);
+                loop {
+                    data.insert((x,y), Content::Rock);
+                    if x == ss[1].0 && y == ss[1].1 {
+                        break;
+                    }
+                    x += dx;
+                    y += dy;
+                }
+            }
+        }
+        let mut y_max = START.1;
+        for p in data.keys() {
+            y_max = y_max.max(p.1);
+        }
+    
+        Self {y_max, data}
+    }
 }
 
 const START: (i32, i32) = (500, 0);
@@ -41,38 +79,18 @@ fn parse_indata(input: &str) -> IResult<&str, Vec<Vec<(i32, i32)>>> {
 }
 
 
-fn build_cave(lst: &Vec<Vec<(i32,i32)>>) -> HashMap<(i32,i32), Content> {
-    let mut cave = HashMap::new();
-    for l in lst {
-        for ss in l.windows(2) {
-            let mut x = ss[0].0;
-            let mut y = ss[0].1;
-            let dx = (ss[1].0 - x).signum();
-            let dy = (ss[1].1 - y).signum();
-            assert!(dx == 0 || dy == 0);
-            loop {
-                cave.insert((x,y), Content::Rock);
-                if x == ss[1].0 && y == ss[1].1 {
-                    break;
-                }
-                x += dx;
-                y += dy;
-            }
-        }
-    }
-    cave
-}
 
-fn draw_cave(cave: &HashMap<(i32,i32), Content>) -> Vec<String> {
+
+fn draw_cave(cave: &Cave) -> Vec<String> {
     let mut res = Vec::new();
     let mut top_left = START;
     let mut bottom_right = START;
-    for p in cave.keys() {
+    for p in cave.data.keys() {
         top_left = (top_left.0.min(p.0), top_left.1.min(p.1));
         bottom_right = (bottom_right.0.max(p.0), bottom_right.1.max(p.1));
     }
 
-    for y in top_left.1..=bottom_right.1 {
+    for y in top_left.1..=bottom_right.1+4 {
         let mut line = String::from("");
         for x in top_left.0..=bottom_right.0 {
             line.push(match cave.get(&(x,y)) {
@@ -86,7 +104,7 @@ fn draw_cave(cave: &HashMap<(i32,i32), Content>) -> Vec<String> {
     res
 }
 
-fn print_cave(cave: &HashMap<(i32,i32), Content>) {
+fn print_cave(cave: &Cave) {
     for l in draw_cave(&cave) {
         println!("{:?}", l);
     }
@@ -97,7 +115,7 @@ enum SearchResult {
     Pos((i32, i32)),
     Done,
 }
-fn find_resting_pos(cave: &HashMap<(i32,i32), Content>, pos: &(i32, i32), y_max: &i32) -> SearchResult {
+fn find_resting_pos(cave: &Cave, pos: &(i32, i32)) -> SearchResult {
     let mut y = pos.1;
     loop {
         match cave.get(&(pos.0, y+1)) {
@@ -105,14 +123,14 @@ fn find_resting_pos(cave: &HashMap<(i32,i32), Content>, pos: &(i32, i32), y_max:
             _ => {
                 let left = (pos.0-1, y+1);
                 if cave.get(&left).is_none() {
-                    match find_resting_pos(&cave, &left, &y_max) {
+                    match find_resting_pos(&cave, &left) {
                         SearchResult::Pos(left_pos) => { return SearchResult::Pos(left_pos); },
                         SearchResult::Done => { return SearchResult::Done; },
                     }
                 } 
                 let right = (pos.0+1, y+1);
                 if cave.get(&right).is_none() {
-                    match find_resting_pos(&cave, &right, &y_max) {
+                    match find_resting_pos(&cave, &right) {
                         SearchResult::Pos(right_pos) => { return SearchResult::Pos(right_pos); },
                         SearchResult::Done => { return SearchResult::Done; },
                     }
@@ -120,23 +138,19 @@ fn find_resting_pos(cave: &HashMap<(i32,i32), Content>, pos: &(i32, i32), y_max:
                 return SearchResult::Pos((pos.0, y));
             }
         }
-        if y > *y_max {
+        if y > cave.y_max {
             return SearchResult::Done;
         }
         y += 1;
     }    
 }
 
-fn drop_sand(cave: &mut HashMap<(i32,i32), Content>) -> SearchResult {
-    let mut y_max = START.1;
-    for p in cave.keys() {
-        y_max = y_max.max(p.1);
-    }
+fn drop_sand(cave: &mut Cave) -> SearchResult {
 
-    let p = find_resting_pos(&cave, &START, &y_max);
+    let p = find_resting_pos(&cave, &START);
     match &p {
         &SearchResult::Pos(p) => { 
-            cave.insert(p, Content::Sand); 
+            cave.data.insert(p, Content::Sand); 
         },
         _ => {},
     }
@@ -148,7 +162,7 @@ fn main() {
     let res = parse_indata(&indata).ok().unwrap().1;
     assert_eq!(179, res.len());
 
-    let mut cave = build_cave(&res);
+    let mut cave = Cave::from(&res);
     let mut count = 0;
     loop {
         let res = drop_sand(&mut cave);
@@ -176,8 +190,8 @@ mod tests {
         assert_eq!(vec!((498,4),(498,6),(496,6)), res[0]);
         assert_eq!(vec!((503,4),(502,4),(502,9),(494,9)), res[1]);
 
-        let cave = build_cave(&res);
-        assert_eq!(20, cave.iter().count());
+        let cave = Cave::from(&res);
+        assert_eq!(20, cave.data.iter().count());
 
         draw_cave(&cave);
     }
