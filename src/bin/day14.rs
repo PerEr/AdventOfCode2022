@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap};
+use std::{fs, collections::HashMap };
 
 use nom::{
     bytes::complete::tag,
@@ -65,16 +65,16 @@ fn build_cave(lst: &Vec<Vec<(i32,i32)>>) -> HashMap<(i32,i32), Content> {
 
 fn draw_cave(cave: &HashMap<(i32,i32), Content>) -> Vec<String> {
     let mut res = Vec::new();
-    let mut topLeft = START;
-    let mut bottomRight = START;
+    let mut top_left = START;
+    let mut bottom_right = START;
     for p in cave.keys() {
-        topLeft = (topLeft.0.min(p.0), topLeft.1.min(p.1));
-        bottomRight = (bottomRight.0.max(p.0), bottomRight.1.max(p.1));
+        top_left = (top_left.0.min(p.0), top_left.1.min(p.1));
+        bottom_right = (bottom_right.0.max(p.0), bottom_right.1.max(p.1));
     }
 
-    for y in topLeft.1..=bottomRight.1 {
+    for y in top_left.1..=bottom_right.1 {
         let mut line = String::from("");
-        for x in topLeft.0..=bottomRight.0 {
+        for x in top_left.0..=bottom_right.0 {
             line.push(match cave.get(&(x,y)) {
                 Some(i) if *i == Content::Rock => '#',
                 Some(i) if *i == Content::Sand => 'o',
@@ -92,7 +92,12 @@ fn print_cave(cave: &HashMap<(i32,i32), Content>) {
     }
 }
 
-fn find_resting_pos(cave: &HashMap<(i32,i32), Content>, pos: &(i32, i32), y_max: &i32) -> Option<(i32, i32)> {
+#[derive(PartialEq)]
+enum SearchResult {
+    Pos((i32, i32)),
+    Done,
+}
+fn find_resting_pos(cave: &HashMap<(i32,i32), Content>, pos: &(i32, i32), y_max: &i32) -> SearchResult {
     let mut y = pos.1;
     loop {
         match cave.get(&(pos.0, y+1)) {
@@ -100,67 +105,61 @@ fn find_resting_pos(cave: &HashMap<(i32,i32), Content>, pos: &(i32, i32), y_max:
             _ => {
                 let left = (pos.0-1, y+1);
                 if cave.get(&left).is_none() {
-                    if let Some(left_pos) = find_resting_pos(&cave, &left, &y_max) {
-                        return Some(left_pos);
+                    match find_resting_pos(&cave, &left, &y_max) {
+                        SearchResult::Pos(left_pos) => { return SearchResult::Pos(left_pos); },
+                        SearchResult::Done => { return SearchResult::Done; },
                     }
                 } 
                 let right = (pos.0+1, y+1);
                 if cave.get(&right).is_none() {
-                    if let Some(right_pos) = find_resting_pos(&cave, &right, &y_max) {
-                        return Some(right_pos);
+                    match find_resting_pos(&cave, &right, &y_max) {
+                        SearchResult::Pos(right_pos) => { return SearchResult::Pos(right_pos); },
+                        SearchResult::Done => { return SearchResult::Done; },
                     }
                 }
-                return Some((pos.0, y));
+                return SearchResult::Pos((pos.0, y));
             }
         }
         if y > *y_max {
-            return None;
+            return SearchResult::Done;
         }
         y += 1;
     }    
 }
 
-fn drop_sand(cave: &mut HashMap<(i32,i32), Content>) -> Option<(i32,i32)>{
-    let mut pos = START;
+fn drop_sand(cave: &mut HashMap<(i32,i32), Content>) -> SearchResult {
     let mut y_max = START.1;
     for p in cave.keys() {
         y_max = y_max.max(p.1);
     }
 
-    y_max += 5;
-    
-    match find_resting_pos(&cave, &START, &y_max) {
-        Some(p) => { 
-            println!("Found pos {:?}", p);
+    let p = find_resting_pos(&cave, &START, &y_max);
+    match &p {
+        &SearchResult::Pos(p) => { 
             cave.insert(p, Content::Sand); 
-            Some(p)
         },
-        None => None,
+        _ => {},
     }
+    p
 }
 
 fn main() {
-    let test_data = "498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9\n";
-    let res = parse_indata(&test_data).ok().unwrap().1;
-    assert_eq!(2, res.len());
-
-    let mut cave = build_cave(&res);
-    for i in 0..25 {
-        if drop_sand(&mut cave).unwrap() == START {
-            print_cave(&cave);
-            break;
-        } 
-        print_cave(&cave);
-    }
-
-/*
     let indata = fs::read_to_string("data/day14.txt").expect("No indata");
     let res = parse_indata(&indata).ok().unwrap().1;
     assert_eq!(179, res.len());
 
-    let cave = build_cave(&res);
-    print_cave(&cave);
-*/
+    let mut cave = build_cave(&res);
+    let mut count = 0;
+    loop {
+        let res = drop_sand(&mut cave);
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+        print_cave(&cave);
+        if res == SearchResult::Done {
+            break;
+        } 
+        count += 1;
+    }
+    println!("Part1: {count}");
 }
 
 // https://github.com/tumdum/aoc2022/blob/main/src/day12.rs
