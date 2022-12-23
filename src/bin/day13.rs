@@ -7,7 +7,7 @@ use nom::{
     IResult, combinator::{map_res}, sequence::delimited, multi::{separated_list0},
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Item {
     Int(i32),
     List(Vec<Item>),
@@ -42,15 +42,59 @@ fn parse_indata(indata: &str) -> Vec<Vec<Item>> {
     }).collect()
     }).collect()
 }
+fn check_list_order(list0: &Item, list1: &Item) -> Option<bool> {
+    if let (Item::List(l0), Item::List(l1)) = (list0, list1) {
+        let mut it0 = l0.into_iter();
+        let mut it1 = l1.into_iter();
+        loop {
+            match (it0.next(),it1.next()) {
+                (None, None) => return None,
+                (None, _) => return Some(true),
+                (_, None) => return Some(false),
+                (Some(Item::Int(i0)), Some(Item::Int(i1))) => if i0 != i1 {
+                    return Some(i0 < i1);
+                },
+                (Some(Item::Int(i0)), Some(Item::List(l1))) => {
+                    let r = check_list_order(&Item::List(vec!(Item::Int(*i0))), &Item::List(l1.to_vec()));
+                    if r.is_some() {
+                        return r;
+                    }
+                },
+                (Some(Item::List(l0)), Some(Item::Int(i1))) => {
+                    let r = check_list_order(&Item::List(l0.to_vec()), &Item::List(vec!(Item::Int(*i1))));
+                    if r.is_some() {
+                        return r;
+                    }
+                },
+                (Some(Item::List(l0)), Some(Item::List(l1))) => {
+                    let r = check_list_order(&Item::List(l0.to_vec()), &Item::List(l1.to_vec()));
+                    if r.is_some() {
+                        return r;
+                    }
+                },
+            }
+        }
+    } else {
+        panic!("Ermagerd");
+    }
+}
+
+fn add_indicies(lst: Vec<bool>) -> i32 {
+    let mut sum = 0;
+    let mut index = 0;
+    for l in lst {
+        index += 1;
+        if l {
+            sum += index;
+        }
+    }
+    sum
+}
 
 fn main() {
     let indata = fs::read_to_string("data/day13.txt").expect("No indata");
-    let res = parse_indata(&indata);
-    for pair in res {
-        assert_eq!(2, pair.len());
-        println!("first: {:?}", pair[0]);
-        println!("second: {:?}", pair[1]);
-    }
+    let res: Vec<bool> = parse_indata(&indata).into_iter().map(|p| check_list_order(&p[0], &p[1])).map(|o| o.unwrap()).collect();
+    println!("{:?}", add_indicies(res));
 
 }
 
@@ -90,6 +134,9 @@ mod tests {
     fn test_part1() {
         let res = parse_indata(&TEST_DATA);
         assert_eq!(8, res.len());
+        let res: Vec<bool> = res.into_iter().map(|p| check_list_order(&p[0], &p[1])).map(|o| o.unwrap()).collect();
+        assert_eq!(vec!(true, true, false, true, false, true, false, false), res);
+        assert_eq!(13, add_indicies(res));
     }
 
 
