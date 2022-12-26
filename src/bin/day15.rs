@@ -46,6 +46,33 @@ fn parse_indata(indata: &str) -> ExclusionZone {
     ExclusionZone { top_left, bottom_right, sensors }
 }
 
+fn calc_ranges_for_line(y: i32, ez: &ExclusionZone) -> Vec<(i32,i32)> {
+    let mut ranges = Vec::new();
+    for s in &ez.sensors {
+        let dist_to_beacon = (s.sensor.x-s.beacon.x).abs() + (s.sensor.y-s.beacon.y).abs();
+        let dy = (y - s.sensor.y).abs();
+        if dy <= dist_to_beacon {
+            let dx = dist_to_beacon - dy;
+            ranges.push((s.sensor.x-dx, s.sensor.x + dx));
+        }
+    }
+    ranges
+}
+
+fn draw_ranges(ranges: &Vec<(i32,i32)>, left: i32, right: i32) -> String {
+    let mut line = String::new();
+    for x in left..=right {
+        let mut excluded = false;
+        for r in ranges {
+            if x >= r.0 && x <= r.1 {
+                excluded = true;
+                break;
+            }
+        }
+        line += if excluded {"#"} else {"."};
+    }
+    line
+}
 
 fn main() {
     let indata = fs::read_to_string("data/day15.txt").expect("No indata");
@@ -91,6 +118,11 @@ mod tests {
         }, exclusion_zone.sensors[13]);
         assert_eq!(Pos {x: -2, y: 0}, exclusion_zone.top_left);
         assert_eq!(Pos {x: 25, y: 22}, exclusion_zone.bottom_right);
+        let ranges = calc_ranges_for_line(10, &exclusion_zone);
+        //let (xmin, xmax) = ranges.iter().fold(ranges[0], |a,x| (a.0.min(x.0), a.1.max(x.1)));
+        let line = draw_ranges(&ranges, exclusion_zone.top_left.x, exclusion_zone.bottom_right.x);
+        assert_eq!("###########################.", line);
+
     }
 
 
