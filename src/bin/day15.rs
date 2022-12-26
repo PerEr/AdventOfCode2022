@@ -4,7 +4,7 @@ use regex::Regex;
 #[derive(Debug, PartialEq, Clone)]
 struct Pos {
     x: i32,
-    y:i32,
+    y: i32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -13,8 +13,15 @@ struct SensorData {
     beacon: Pos,
 }
 
-fn parse_indata(indata: &str) -> Vec<SensorData> {
-    Regex::new(r".* x=([-]?\d+), y=([-]?\d+): .* x=([-]?\d+), y=([-]?\d+)")
+#[derive(Debug, PartialEq, Clone)]
+struct ExclusionZone {
+    top_left: Pos,
+    bottom_right: Pos,
+    sensors: Vec<SensorData>,
+}
+
+fn parse_indata(indata: &str) -> ExclusionZone {
+    let sensors: Vec<SensorData> = Regex::new(r".* x=([-]?\d+), y=([-]?\d+): .* x=([-]?\d+), y=([-]?\d+)")
         .unwrap()
         .captures_iter(indata)
         .map(|cap| {
@@ -23,15 +30,28 @@ fn parse_indata(indata: &str) -> Vec<SensorData> {
                 beacon: Pos {x: cap[3].parse().unwrap(), y: cap[4].parse().unwrap()},
          }
         })
-        .collect()
+        .collect();
+    let extremes = sensors.iter().map(|sd| (
+        sd.sensor.x.min(sd.beacon.x),
+        sd.sensor.y.min(sd.beacon.y),
+        sd.sensor.x.max(sd.beacon.x), 
+        sd.sensor.y.max(sd.beacon.y)
+    )).fold((i32::MAX, i32::MAX, i32::MIN, i32::MIN), |a,x| (
+        a.0.min(x.0),
+        a.1.min(x.1),
+        a.2.max(x.2),
+        a.3.max(x.3)
+    ));
+    let (top_left, bottom_right) = (Pos { x: extremes.0, y: extremes.1}, Pos {x: extremes.2, y:extremes.3});
+    ExclusionZone { top_left, bottom_right, sensors }
 }
 
 
 fn main() {
     let indata = fs::read_to_string("data/day15.txt").expect("No indata");
-    let sensor_data = parse_indata(&indata);
-    assert_eq!(23, sensor_data.len());
-    println!("{:?}", sensor_data);
+    let exclusion_zone = parse_indata(&indata);
+    assert_eq!(23, exclusion_zone.sensors.len());
+    println!("{:?}", exclusion_zone);
 }
 
 #[cfg(test)]
@@ -59,16 +79,18 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let sensor_data = parse_indata(&TEST_DATA);
-        assert_eq!(14, sensor_data.len());
+        let exclusion_zone = parse_indata(&TEST_DATA);
+        assert_eq!(14, exclusion_zone.sensors.len());
         assert_eq!(SensorData { 
             sensor: Pos {x:2, y:18}, 
             beacon: Pos {x:-2, y:15},
-        }, sensor_data[0]);
+        }, exclusion_zone.sensors[0]);
         assert_eq!(SensorData { 
             sensor: Pos {x:20, y:1}, 
             beacon: Pos {x:15, y:3},
-        }, sensor_data[13]);
+        }, exclusion_zone.sensors[13]);
+        assert_eq!(Pos {x: -2, y: 0}, exclusion_zone.top_left);
+        assert_eq!(Pos {x: 25, y: 22}, exclusion_zone.bottom_right);
     }
 
 
