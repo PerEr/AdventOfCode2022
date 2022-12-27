@@ -147,7 +147,7 @@ fn find_resting_pos(cave: &Cave, pos: &(i32, i32)) -> SearchResult {
 
 fn drop_sand(cave: &mut Cave) -> SearchResult {
 
-    let mut p = find_resting_pos(&cave, &START);
+    let p = find_resting_pos(&cave, &START);
     match &p {
         &SearchResult::Pos(p) => { 
             cave.data.insert(p, Content::Sand); 
