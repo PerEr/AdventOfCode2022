@@ -1,10 +1,11 @@
-use std::{fs};
+use std::{fs, ops::RangeInclusive};
+use itertools::Itertools;
 use regex::Regex;
 
 #[derive(Debug, PartialEq, Clone)]
 struct Pos {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -36,7 +37,7 @@ fn parse_indata(indata: &str) -> ExclusionZone {
         sd.sensor.y.min(sd.beacon.y),
         sd.sensor.x.max(sd.beacon.x), 
         sd.sensor.y.max(sd.beacon.y)
-    )).fold((i32::MAX, i32::MAX, i32::MIN, i32::MIN), |a,x| (
+    )).fold((i64::MAX, i64::MAX, i64::MIN, i64::MIN), |a,x| (
         a.0.min(x.0),
         a.1.min(x.1),
         a.2.max(x.2),
@@ -46,46 +47,39 @@ fn parse_indata(indata: &str) -> ExclusionZone {
     ExclusionZone { top_left, bottom_right, sensors }
 }
 
-fn calc_ranges_for_line(y: i32, ez: &ExclusionZone) -> (Vec<(i32,i32)>, Vec<i32>) {
+fn calc_ranges_for_line(y: i64, ez: &ExclusionZone) -> (Vec<RangeInclusive<i64>>, Vec<i64>) {
     let mut ranges = Vec::new();
     for s in &ez.sensors {
         let dist_to_beacon = (s.sensor.x-s.beacon.x).abs() + (s.sensor.y-s.beacon.y).abs();
         let dy = (y - s.sensor.y).abs();
         if dy <= dist_to_beacon {
             let dx = dist_to_beacon - dy;
-            ranges.push((s.sensor.x-dx, s.sensor.x + dx));
+            ranges.push(s.sensor.x-dx..=s.sensor.x + dx);
         }
     }
-    let beacon_xs = ez.sensors.iter().map(|sd| &sd.beacon).filter(|p| p.y == y).map(|p| p.x).collect();
-    (ranges, beacon_xs)
-}
-
-fn draw_ranges(ranges: &Vec<(i32,i32)>, beacons: &Vec<i32>, left: i32, right: i32) -> String {
-    let mut line = String::new();
-    for x in left..=right {
-        if beacons.contains(&x) {
-            line += "B";
-        } else {
-            let mut excluded = false;
-            for r in ranges {
-                if x >= r.0 && x <= r.1 {
-                    excluded = true;
-                    break;
-                }
+    ranges.sort_by_key(|r| *r.start());
+    let coalesced_ranges = ranges.into_iter().coalesce(|a, b| {
+        if b.start() - 1 <= *a.end() {
+            if b.end() > a.end() {
+                Ok(*a.start()..=*b.end())
+            } else {
+                Ok(a)
             }
-                line += if excluded {"#"} else {"."};
+        } else {
+            Err((a, b))
         }
-    }
-    line
+    }).collect();
+    let beacon_xs = ez.sensors.iter().map(|sd| &sd.beacon).filter(|p| p.y == y).map(|p| p.x).collect();
+    (coalesced_ranges, beacon_xs)
 }
 
-fn count_excluded_in_ranges(ranges: &Vec<(i32,i32)>, beacons: &Vec<i32>, left: i32, right: i32) -> i32 {
+fn count_excluded_in_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &Vec<i64>, left: i64, right: i64) -> i64 {
     let mut sum = 0;
     for x in left..=right {
         if !beacons.contains(&x) {
             let mut excluded = false;
             for r in ranges {
-                if x >= r.0 && x <= r.1 {
+                if x >= *r.start() && x <= *r.end() {
                     excluded = true;
                     break;
                 }
@@ -98,15 +92,36 @@ fn count_excluded_in_ranges(ranges: &Vec<(i32,i32)>, beacons: &Vec<i32>, left: i
     sum
 }
 
+fn calc_candidate_beacon_positions(range: RangeInclusive<i64>, ez: &ExclusionZone) -> Vec<(i64,i64,i64)>{
+    let mut candidates: Vec<(i64,i64,i64)> = Vec::new();
+    for line in range {
+        let (ranges, _) = calc_ranges_for_line(line, &ez);
+        if ranges.len() > 1 {
+            let x = *ranges[1].start() - 1;
+            candidates.push((x, line, x * 4000000 + line));
+
+        }
+    }
+    candidates
+}
+
 fn main() {
     let indata = fs::read_to_string("data/day15.txt").expect("No indata");
     let exclusion_zone = parse_indata(&indata);
     assert_eq!(23, exclusion_zone.sensors.len());
     let (ranges, beacons) = calc_ranges_for_line(2000000, &exclusion_zone);
-    let (xmin, xmax) = ranges.iter()
-        .fold(ranges[0], |a,x| (a.0.min(x.0), a.1.max(x.1)));
-    let excl = count_excluded_in_ranges(&ranges, &beacons, xmin, xmax);
+    let xspan = ranges.iter()
+        .fold(ranges[0].clone(), |a,x| {
+            let xmin: i64 = *a.start().min(x.start());
+            let xmax: i64 = *a.end().max(x.end());
+            xmin..=xmax
+        });
+    let excl = count_excluded_in_ranges(&ranges, &beacons, *xspan.start(), *xspan.end());
     println!("Part1: {}", excl);
+
+    let pos_to_test = calc_candidate_beacon_positions(0..=4000000, &exclusion_zone);
+    println!("Part2: {:?}", pos_to_test);
+
 }
 
 #[cfg(test)]
@@ -132,6 +147,25 @@ mod tests {
     "#
     };
 
+    fn draw_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &Vec<i64>, left: i64, right: i64) -> String {
+        let mut line = String::new();
+        for x in left..=right {
+            if beacons.contains(&x) {
+                line += "B";
+            } else {
+                let mut excluded = false;
+                for r in ranges {
+                    if x >= *r.start() && x <= *r.end() {
+                        excluded = true;
+                        break;
+                    }
+                }
+                    line += if excluded {"#"} else {"."};
+            }
+        }
+        line
+    }
+        
     #[test]
     fn test_part1() {
         let exclusion_zone = parse_indata(&TEST_DATA);
@@ -151,6 +185,14 @@ mod tests {
         let line = draw_ranges(&ranges, &beacons, exclusion_zone.top_left.x, exclusion_zone.bottom_right.x);
         assert_eq!("####B######################.", line);
         assert_eq!(26, count_excluded_in_ranges(&ranges, &beacons, exclusion_zone.top_left.x, exclusion_zone.bottom_right.x));
+    }
+
+    #[test]
+    fn test_part2() {
+        let exclusion_zone = parse_indata(&TEST_DATA);
+        let pos_to_test = calc_candidate_beacon_positions(0..=20, &exclusion_zone);
+        assert_eq!(1, pos_to_test.len());
+        assert_eq!((14,11,56000011), pos_to_test[0]);
     }
 
 
