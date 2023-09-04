@@ -1,4 +1,4 @@
-use std::{fs};
+use std::fs;
 use regex::Regex;
 
 #[derive(Debug, PartialEq)]
@@ -11,7 +11,7 @@ fn parse_indata(indata: &str) -> Vec<Command> {
     Regex::new(r"(noop|addx)( [-]?\d+)?")
         .unwrap()
         .captures_iter(indata)
-        .map(|cap| {
+        .flat_map(|cap| {
             match &cap[1] {
                 "noop" => vec!(Command::Noop),
                 "addx" => {         
@@ -20,7 +20,6 @@ fn parse_indata(indata: &str) -> Vec<Command> {
                 _ => panic!("Not allowed"),
             }
         })
-        .flatten()
         .collect()
 }
 
@@ -33,7 +32,7 @@ fn play_commands(commands: &Vec<Command>) -> Vec<i32> {
             Command::Noop => {
             },
             Command::AddX(nr) => {
-                x = x + nr;
+                x += nr;
             },
         };
         rep.push(x);
@@ -41,12 +40,12 @@ fn play_commands(commands: &Vec<Command>) -> Vec<i32> {
     rep
 }
 
-fn signal_strength(xs: &Vec<i32>) -> i32 {
+fn signal_strength(xs: &[i32]) -> i32 {
     let mut res = 0;
     for i in 0..=5 {
         let index = 40*i+20;
         let value = xs[index-2];
-        res = res + value * (index as i32);
+        res += value * (index as i32);
     }
     res
 }
@@ -65,7 +64,7 @@ fn render_screen(xs: &Vec<i32>) -> Vec<String> {
             res.push(line.clone());
             line.clear();
         }
-        nextx = x.clone();
+        nextx = *x;
     }
     res
 }
@@ -87,7 +86,7 @@ mod tests {
     use indoc::indoc;
 
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
         addx 15
         addx -11
         addx 6
@@ -239,7 +238,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let commands = parse_indata(&TEST_DATA);
+        let commands = parse_indata(TEST_DATA);
         let xs = play_commands(&commands);
         let res = signal_strength(&xs);
         assert_eq!(13140, res);
@@ -247,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let commands = parse_indata(&TEST_DATA);
+        let commands = parse_indata(TEST_DATA);
         let xs = play_commands(&commands);
         let screen = render_screen(&xs);
 

@@ -73,7 +73,7 @@ fn calc_ranges_for_line(y: i64, ez: &ExclusionZone) -> (Vec<RangeInclusive<i64>>
     (coalesced_ranges, beacon_xs)
 }
 
-fn count_excluded_in_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &Vec<i64>, left: i64, right: i64) -> i64 {
+fn count_excluded_in_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &[i64], left: i64, right: i64) -> i64 {
     let mut sum = 0;
     for x in left..=right {
         if !beacons.contains(&x) {
@@ -95,7 +95,7 @@ fn count_excluded_in_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &Vec<i64
 fn calc_candidate_beacon_positions(range: RangeInclusive<i64>, ez: &ExclusionZone) -> Vec<(i64,i64,i64)>{
     let mut candidates: Vec<(i64,i64,i64)> = Vec::new();
     for line in range {
-        let (ranges, _) = calc_ranges_for_line(line, &ez);
+        let (ranges, _) = calc_ranges_for_line(line, ez);
         if ranges.len() > 1 {
             let x = *ranges[1].start() - 1;
             candidates.push((x, line, x * 4000000 + line));
@@ -129,7 +129,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
     Sensor at x=2, y=18: closest beacon is at x=-2, y=15
     Sensor at x=9, y=16: closest beacon is at x=10, y=16
     Sensor at x=13, y=2: closest beacon is at x=15, y=3
@@ -147,7 +147,7 @@ mod tests {
     "#
     };
 
-    fn draw_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &Vec<i64>, left: i64, right: i64) -> String {
+    fn draw_ranges(ranges: &Vec<RangeInclusive<i64>>, beacons: &[i64], left: i64, right: i64) -> String {
         let mut line = String::new();
         for x in left..=right {
             if beacons.contains(&x) {
@@ -168,7 +168,7 @@ mod tests {
         
     #[test]
     fn test_part1() {
-        let exclusion_zone = parse_indata(&TEST_DATA);
+        let exclusion_zone = parse_indata(TEST_DATA);
         assert_eq!(14, exclusion_zone.sensors.len());
         assert_eq!(SensorData { 
             sensor: Pos {x:2, y:18}, 
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let exclusion_zone = parse_indata(&TEST_DATA);
+        let exclusion_zone = parse_indata(TEST_DATA);
         let pos_to_test = calc_candidate_beacon_positions(0..=20, &exclusion_zone);
         assert_eq!(1, pos_to_test.len());
         assert_eq!((14,11,56000011), pos_to_test[0]);

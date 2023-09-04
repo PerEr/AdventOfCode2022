@@ -29,10 +29,12 @@ fn parse_command(input: &str) -> IResult<&str, (usize, usize, usize)> {
 
     Ok((input, (nr, from, to)))
 }
-fn parse_indata<'a>(indata: &'a str) -> (Vec<Vec<char>>, Vec<(usize, usize, usize)>) {
-    let mut it = indata.split("\n").filter(|l| !l.is_empty());
+type InData = (Vec<Vec<char>>, Vec<(usize, usize, usize)>);
+
+fn parse_indata(indata: &str) -> InData {
+    let mut it = indata.split('\n').filter(|l| !l.is_empty());
     let mut stacks = vec![];
-    while let Ok((_, row_result)) = parse_crates(&it.next().unwrap()) {
+    while let Ok((_, row_result)) = parse_crates(it.next().unwrap()) {
         if stacks.is_empty() {
             stacks = std::iter::repeat(vec![]).take(row_result.len()).collect();
         }
@@ -45,7 +47,7 @@ fn parse_indata<'a>(indata: &'a str) -> (Vec<Vec<char>>, Vec<(usize, usize, usiz
 
     let commands: Vec<(usize, usize, usize)> = it
         .map(|input| {
-            let (_, command) = parse_command(&input).unwrap();
+            let (_, command) = parse_command(input).unwrap();
             command
         })
         .collect();
@@ -99,7 +101,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
         [D]    
     [N] [C]    
     [Z] [M] [P]
@@ -114,14 +116,14 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let (stacks, commands) = parse_indata(&TEST_DATA);
+        let (stacks, commands) = parse_indata(TEST_DATA);
         let result = play_commands(&stacks, &commands);
         assert_eq!("CMZ", result);
     }
 
     #[test]
     fn test_part2() {
-        let (stacks, commands) = parse_indata(&TEST_DATA);
+        let (stacks, commands) = parse_indata(TEST_DATA);
         let result = play_commands2(&stacks, &commands);
         assert_eq!("MCD", result);
     }

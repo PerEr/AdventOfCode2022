@@ -25,7 +25,7 @@ fn parse_indata(indata: &str) -> (Vec<Monkey>, HashMap<i64, Vec<i64>>) {
         .captures_iter(indata)
         .map(|cap| {
             let id: i64 = cap[1].parse().unwrap();
-            let items: Vec<i64> = cap[2].split(",").map(|i| i.trim().parse().unwrap()).collect();
+            let items: Vec<i64> = cap[2].split(',').map(|i| i.trim().parse().unwrap()).collect();
             item_map.insert(id, items);
             let op = match &cap[3] {
                 "*" => if &cap[4] == "old" {Op::Sq} else {Op::Mul(cap[4].trim().parse().unwrap())},
@@ -54,8 +54,8 @@ fn play_once(monkeys: &Vec<Monkey>,
             for ii in  it {
                 let mut worry: i64 = *ii;
                 match m.op {
-                    Op::Add(n) => worry = worry + n,
-                    Op::Mul(n) => worry = worry * n,
+                    Op::Add(n) => worry += n,
+                    Op::Mul(n) => worry *= n,
                     Op::Sq => worry = worry * worry,
                     Op::X2 => worry = worry + worry,
                 }
@@ -90,20 +90,20 @@ fn play(monkeys: &Vec<Monkey>, items: &HashMap<i64, Vec<i64>>, nr: usize, wf: &i
     let mut mut_items = items.clone();
     let mut mut_inspections: HashMap<i64, i64> = HashMap::new();
     for _ in 0..nr {
-        (mut_items, mut_inspections) = play_once(&monkeys, &mut_items, &mut_inspections, wf);
+        (mut_items, mut_inspections) = play_once(monkeys, &mut_items, &mut_inspections, wf);
     }
     (mut_items, mut_inspections)
 }
 
 fn calc_monkey_business(inspections: &HashMap<i64, i64>) -> i64 {
-    inspections.values().copied().sorted().rev().take(2).fold(1i64, |acc, val| acc * val)
+    inspections.values().copied().sorted().rev().take(2).product::<i64>()
 }
 
 fn worry_function_1(w: i64) -> i64 {  
     w / 3
 }
 
-fn make_worry_function_2(monkeys: &Vec<Monkey>) -> impl Fn (i64) -> i64 {
+fn make_worry_function_2(monkeys: &[Monkey]) -> impl Fn (i64) -> i64 {
     let modulo: i64 = monkeys.iter().map(|m| m.div_by).product();
     move |w| w % modulo
 }
@@ -126,7 +126,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
         Monkey 0:
         Starting items: 79, 98
         Operation: new = old * 19
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let (monkeys, items) = parse_indata(&TEST_DATA);
+        let (monkeys, items) = parse_indata(TEST_DATA);
         let (items, inspections) = play(&monkeys, &items, 20, &worry_function_1);
         assert_eq!(2, items.len());
         assert_eq!(vec!(10, 12, 14, 26, 34), items[&0]);
@@ -169,17 +169,17 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let (monkeys, items) = parse_indata(&TEST_DATA);
+        let (monkeys, items) = parse_indata(TEST_DATA);
         {
-            let (items, inspections) = play(&monkeys, &items, 20, &make_worry_function_2(&monkeys));
+            let (_items, inspections) = play(&monkeys, &items, 20, &make_worry_function_2(&monkeys));
             assert_eq!(103*99, calc_monkey_business(&inspections));
         }
         {
-            let (items, inspections) = play(&monkeys, &items, 1_000, &make_worry_function_2(&monkeys));
+            let (_items, inspections) = play(&monkeys, &items, 1_000, &make_worry_function_2(&monkeys));
             assert_eq!(5192*5204, calc_monkey_business(&inspections));
         }
         {
-            let (items, inspections) = play(&monkeys, &items, 10_000, &make_worry_function_2(&monkeys));
+            let (_items, inspections) = play(&monkeys, &items, 10_000, &make_worry_function_2(&monkeys));
             assert_eq!(52013*52166, calc_monkey_business(&inspections));
         }
     }

@@ -2,7 +2,7 @@ use std::fs;
 
 fn parse_indata(indata: &str) -> Vec<(Choice, Choice)> {
     indata
-        .split("\n")
+        .split('\n')
         .filter(|l| !l.is_empty())
         .map(|b| {
             let mut ch = b.chars();
@@ -71,18 +71,18 @@ fn calc_choice(c: &(Choice, Choice)) -> (Choice, Choice) {
     }
 }
 
-fn process(strategy: &Vec<(Choice, Choice)>, f: fn(&(Choice, Choice)) -> (Choice, Choice)) -> i32 {
+fn process(strategy: &[(Choice, Choice)], f: fn(&(Choice, Choice)) -> (Choice, Choice)) -> i32 {
     strategy
         .iter()
         .map(f)
         .map(|t| score(&t))
-        .fold(0, |a, v| a + v)
+        .sum::<i32>()
 }
 
 fn main() {
     let indata = fs::read_to_string("data/day2.txt").expect("No indata");
     let strategy = parse_indata(&indata);
-    println!("Part1: {}", process(&strategy, |t| t.clone()));
+    println!("Part1: {}", process(&strategy, |t| *t));
     println!("Part2: {}", process(&strategy, calc_choice));
 }
 
@@ -100,10 +100,10 @@ mod tests {
         "#
         };
 
-        let strategy = parse_indata(&test_data);
+        let strategy = parse_indata(test_data);
         assert_eq!(3, strategy.len());
 
-        assert_eq!(15, process(&strategy, |t| t.clone()));
+        assert_eq!(15, process(&strategy, |t| *t));
         assert_eq!(12, process(&strategy, calc_choice));
     }
 }

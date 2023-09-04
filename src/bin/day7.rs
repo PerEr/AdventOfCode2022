@@ -55,7 +55,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
         $ cd /
         $ ls
         dir a
@@ -84,13 +84,13 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let sizes = parse_indata(&TEST_DATA);
+        let sizes = parse_indata(TEST_DATA);
         assert_eq!(95437, calc_part1(&sizes, 100000));
     }
 
     #[test]
     fn test_part2() {
-        let sizes = parse_indata(&TEST_DATA);
+        let sizes = parse_indata(TEST_DATA);
         assert_eq!(24933642, calc_part2(&sizes, 70000000, 30000000));
     }
 }

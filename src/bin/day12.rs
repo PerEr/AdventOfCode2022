@@ -1,4 +1,4 @@
-use std::{fs, collections::{HashMap}};
+use std::{fs, collections::HashMap};
 use std::collections::VecDeque;
 
 fn char_to_value(c: char) -> i32 {
@@ -46,9 +46,9 @@ impl Grid {
     }
 
     fn neighbours(&self, p: &Pos) -> Vec<Pos> {
-        vec!((0,1), (0, -1), (1, 0), (-1,0)).iter()
+        [(0,1), (0, -1), (1, 0), (-1,0)].iter()
             .map(|(dr,dc)| (p.r+dr, p.c+dc))
-            .filter(|(r,c)| *r >= 0 && *c >= 0 && *r < self.rows as i32 && *c < self.cols as i32)
+            .filter(|(r,c)| *r >= 0 && *c >= 0 && *r < self.rows && *c < self.cols)
             .map(|(r ,c)| Pos::from(r,c))
             .collect()
     }
@@ -76,8 +76,8 @@ fn solve_maze(grid: &Grid, start: &Pos, end: &Pos) -> HashMap<Pos, (Pos, i32)> {
     let mut solution: HashMap<Pos, (Pos, i32)> = HashMap::new();
     let mut to_visit: VecDeque<(Pos, i32)> = VecDeque::with_capacity(128);
 
-    to_visit.push_back((start.clone(), 0));
-    solution.insert(start.clone(), (start.clone(), 0));
+    to_visit.push_back((*start, 0));
+    solution.insert(*start, (*start, 0));
 
     while let Some((pos, path_len)) = to_visit.pop_front() {
         let height = grid.get(&pos);
@@ -88,8 +88,8 @@ fn solve_maze(grid: &Grid, start: &Pos, end: &Pos) -> HashMap<Pos, (Pos, i32)> {
                 if solution.get(&p).map(|(_,l)| l).unwrap_or(&i32::max_value()) <= &next_path_len {
                     continue;
                 }
-                solution.insert(p.clone(), (pos.clone(), next_path_len));
-                to_visit.push_back((p.clone(), next_path_len));
+                solution.insert(p, (pos, next_path_len));
+                to_visit.push_back((p, next_path_len));
                 if pos == *end {
                     break;
                 }
@@ -122,19 +122,18 @@ fn main() {
             } else {
                 None
             }
-        }).filter(|op| op.is_some()).map(|op| op.unwrap()).collect();
+        }).filter(|op| op.is_some()).flatten().collect();
         res.sort_by(|a,b| a.1.cmp(&b.1));
         println!("Part2: {:?}", res[0]);
     }
 }
 
-// https://github.com/tumdum/aoc2022/blob/main/src/day12.rs
 #[cfg(test)]
 mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
     Sabqponm
     abcryxxl
     accszExk
@@ -145,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let mut grid = parse_indata(&TEST_DATA);
+        let mut grid = parse_indata(TEST_DATA);
         let start = find_char(&grid, char_to_value('S'))[0];
         let end = find_char(&grid, char_to_value('E'))[0];
         assert_eq!(Pos::from(0,0), start);
@@ -162,7 +161,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let mut grid = parse_indata(&TEST_DATA);
+        let mut grid = parse_indata(TEST_DATA);
         let start = find_char(&grid, char_to_value('S'))[0];
         let end = find_char(&grid, char_to_value('E'))[0];
         assert_eq!(Pos::from(0,0), start);

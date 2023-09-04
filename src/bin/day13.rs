@@ -3,8 +3,8 @@ use std::{fs, cmp::Ordering};
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{digit1},
-    IResult, combinator::{map_res}, sequence::delimited, multi::{separated_list0},
+    character::complete::digit1,
+    IResult, combinator::map_res, sequence::delimited, multi::separated_list0,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,7 +34,7 @@ fn parse_list(input: &str) -> IResult<&str, Item> {
 fn parse_indata(indata: &str) -> Vec<Vec<Item>> {
     indata.split("\n\n")
         .map(|t| {
-        t.split("\n").map(|l| {
+        t.split('\n').map(|l| {
             match parse_list(l) {
                 Ok(r) => r.1,
                 Err(_n) => panic!("Should not happen"),
@@ -44,8 +44,8 @@ fn parse_indata(indata: &str) -> Vec<Vec<Item>> {
 }
 fn check_list_order(list0: &Item, list1: &Item) -> Option<bool> {
     if let (Item::List(l0), Item::List(l1)) = (list0, list1) {
-        let mut it0 = l0.into_iter();
-        let mut it1 = l1.into_iter();
+        let mut it0 = l0.iter();
+        let mut it1 = l1.iter();
         loop {
             match (it0.next(),it1.next()) {
                 (None, None) => return None,
@@ -91,12 +91,12 @@ fn add_indicies(lst: Vec<bool>) -> i32 {
     sum
 }
 
-fn mul_delim_indicies(delims: &Vec<Item>, res: &Vec<Item>) -> i32 {
+fn mul_delim_indicies(delims: &[Item], res: &[Item]) -> i32 {
     let mut index = 0;
     let mut indicies: Vec<i32> = Vec::new();
     for ii in res {
         index += 1;
-        if delims.contains(&ii) {
+        if delims.contains(ii) {
             indicies.push(index);
         }
     }
@@ -139,13 +139,12 @@ fn main() {
 
 }
 
-// https://github.com/tumdum/aoc2022/blob/main/src/day12.rs
 #[cfg(test)]
 mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
     [1,1,3,1,1]
     [1,1,5,1,1]
     
@@ -173,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let res = parse_indata(&TEST_DATA);
+        let res = parse_indata(TEST_DATA);
         assert_eq!(8, res.len());
         let res: Vec<bool> = res.into_iter().map(|p| check_list_order(&p[0], &p[1])).map(|o| o.unwrap()).collect();
         assert_eq!(vec!(true, true, false, true, false, true, false, false), res);
@@ -182,13 +181,13 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let mut res: Vec<Item> = parse_indata(&TEST_DATA).into_iter().flatten().collect();
+        let mut res: Vec<Item> = parse_indata(TEST_DATA).into_iter().flatten().collect();
         let delims: Vec<Item> = append_and_sort(vec!("[[2]]", "[[6]]"), &mut res);
         let mut index = 0;
         let mut indicies: Vec<i32> = Vec::new();
         for ii in &res {
             index += 1;
-            if delims.contains(&ii) {
+            if delims.contains(ii) {
                 indicies.push(index);
             }
         }

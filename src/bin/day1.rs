@@ -4,8 +4,8 @@ fn parse_indata(indata: &str) -> Vec<Vec<i32>> {
     indata
         .split("\n\n")
         .map(|b| {
-            b.split("\n")
-                .filter(|v| v.len() > 0)
+            b.split('\n')
+                .filter(|v| !v.is_empty())
                 .map(|v| v.parse::<i32>().unwrap())
                 .collect()
         })
@@ -13,9 +13,9 @@ fn parse_indata(indata: &str) -> Vec<Vec<i32>> {
 }
 
 fn process(indata: &str) -> (i32, i32) {
-    let mut sums: Vec<i32> = parse_indata(&indata)
+    let mut sums: Vec<i32> = parse_indata(indata)
         .iter()
-        .map(|v| v.iter().fold(0, |a, v| a + v))
+        .map(|v| v.iter().sum::<i32>())
         .collect();
     sums.sort_by(|a, b| b.cmp(a));
     (sums[0], sums[0..3].iter().sum::<i32>())
@@ -51,7 +51,7 @@ mod tests {
         10000
         "#
         };
-        let (p1, p2) = super::process(&test_data);
+        let (p1, p2) = super::process(test_data);
         assert_eq!(24000, p1);
         assert_eq!(45000, p2);
     }

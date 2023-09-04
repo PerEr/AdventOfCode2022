@@ -11,7 +11,7 @@ fn to_priority(item: u8) -> i32 {
 
 fn parse_indata(indata: &str) -> Vec<(HashSet<i32>, HashSet<i32>)> {
     indata
-        .split("\n")
+        .split('\n')
         .filter(|l| !l.is_empty())
         .map(|l| {
             let (left, right) = l.split_at(l.len() / 2);
@@ -23,13 +23,13 @@ fn parse_indata(indata: &str) -> Vec<(HashSet<i32>, HashSet<i32>)> {
         .collect()
 }
 
-fn process1(data: &Vec<(HashSet<i32>, HashSet<i32>)>) -> i32 {
+fn process1(data: &[(HashSet<i32>, HashSet<i32>)]) -> i32 {
     data.iter()
         .map(|(l, r)| l.intersection(r).next().unwrap())
         .sum()
 }
 
-fn process2(data: &Vec<(HashSet<i32>, HashSet<i32>)>) -> i32 {
+fn process2(data: &[(HashSet<i32>, HashSet<i32>)]) -> i32 {
     data.iter()
         .map(|(l, r)| l | r)
         .tuples()
@@ -49,7 +49,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
     vJrwpWtwJgWrhcsFMMfFFhFp
     jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
     PmmdzqPrVvPwwTWBwg
@@ -60,14 +60,14 @@ mod tests {
     };
     #[test]
     fn test_part1() {
-        let data = parse_indata(&TEST_DATA);
+        let data = parse_indata(TEST_DATA);
         let score = process1(&data);
         assert_eq!(157, score);
     }
 
     #[test]
     fn test_part2() {
-        let data = parse_indata(&TEST_DATA);
+        let data = parse_indata(TEST_DATA);
         let score = process2(&data);
         assert_eq!(70, score);
     }

@@ -8,12 +8,12 @@ fn parse_indata(input: &str) -> Grid {
     let to_cell = |c: char| -> Cell {
         (c.to_digit(10).unwrap() as i32, false)
     };
-    for line in input.split("\n") {
+    for line in input.split('\n') {
         let mut row = Vec::new();
         for c in line.chars() {
             row.push(to_cell(c));
         }
-        if row.len() > 0 {
+        if !row.is_empty() {
             grid.push(row);
         }
     }
@@ -43,11 +43,9 @@ fn set_row_visibility(grid: &mut Grid, col: usize, row_index: fn(rows: usize, ix
 }
 
 fn set_visibility(grid: &mut Grid) {
-    let rows = grid.len();
-
-    for row in 0..rows {
-        set_col_visibility(&mut grid[row], |_, ix| ix);
-        set_col_visibility(&mut grid[row], |cols, ix| cols - ix -1);
+    for row in grid.iter_mut() {
+        set_col_visibility(&mut *row, |_, ix| ix);
+        set_col_visibility(&mut *row, |cols, ix| cols - ix -1);
     }
 
     for col in 0..grid[0].len() {
@@ -61,11 +59,11 @@ fn count_trees(grid: &Grid, row: usize, col: usize, dr: i32, dc: i32) -> usize {
     let mut c = col as i32;
     let mut count = 0;
     loop {    
-        r = r + dr;
-        c = c + dc;
+        r += dr;
+        c += dc;
         if r >= 0 && c >= 0 && r < grid.len() as i32 && c < grid[r as usize].len() as i32 {    
             let h = grid[r as usize][c as usize].0;
-            count = count + 1;
+            count += 1;
             if h >= grid[row][col].0 {
                 break;
             }
@@ -110,7 +108,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
     30373
     25512
     65332
@@ -121,14 +119,14 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let mut grid = parse_indata(&TEST_DATA);
+        let mut grid = parse_indata(TEST_DATA);
         set_visibility(&mut grid);
         assert_eq!(21, count_visible(&grid));
     }
 
     #[test]
     fn test_part2() {
-        let grid = parse_indata(&TEST_DATA);
+        let grid = parse_indata(TEST_DATA);
         assert_eq!(8, get_max_score(&grid));
     }
 

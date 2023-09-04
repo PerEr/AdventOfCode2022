@@ -2,8 +2,8 @@ use std::{fs, collections::HashMap };
 
 use nom::{
     bytes::complete::tag,
-    character::complete::{digit1},
-    IResult, combinator::{map_res}, sequence::{tuple}, multi::{separated_list0, many0},
+    character::complete::digit1,
+    IResult, combinator::map_res, sequence::tuple, multi::{separated_list0, many0},
 };
 
 #[derive(Debug, PartialEq)]
@@ -105,7 +105,7 @@ fn draw_cave(cave: &Cave) -> Vec<String> {
 }
 
 fn print_cave(cave: &Cave) {
-    for l in draw_cave(&cave) {
+    for l in draw_cave(cave) {
         println!("{:?}", l);
     }
 }
@@ -123,14 +123,14 @@ fn find_resting_pos(cave: &Cave, pos: &(i32, i32)) -> SearchResult {
             _ => {
                 let left = (pos.0-1, y+1);
                 if cave.get(&left).is_none() {
-                    match find_resting_pos(&cave, &left) {
+                    match find_resting_pos(cave, &left) {
                         SearchResult::Pos(left_pos) => { return SearchResult::Pos(left_pos); },
                         SearchResult::Done => { return SearchResult::Done; },
                     }
                 } 
                 let right = (pos.0+1, y+1);
                 if cave.get(&right).is_none() {
-                    match find_resting_pos(&cave, &right) {
+                    match find_resting_pos(cave, &right) {
                         SearchResult::Pos(right_pos) => { return SearchResult::Pos(right_pos); },
                         SearchResult::Done => { return SearchResult::Done; },
                     }
@@ -147,7 +147,7 @@ fn find_resting_pos(cave: &Cave, pos: &(i32, i32)) -> SearchResult {
 
 fn drop_sand(cave: &mut Cave) -> SearchResult {
 
-    let p = find_resting_pos(&cave, &START);
+    let p = find_resting_pos(cave, &START);
     match &p {
         &SearchResult::Pos(p) => { 
             cave.data.insert(p, Content::Sand); 
@@ -170,7 +170,7 @@ fn main() {
     let mut count = 0;
     loop {
         let res = drop_sand(&mut cave);
-        if count % 20 == 0 {
+        if false && count % 20 == 0 {
             print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
             print_cave(&cave);
         }
@@ -182,22 +182,21 @@ fn main() {
     println!("Part2: {}", count+1);
 }
 
-// https://github.com/tumdum/aoc2022/blob/main/src/day12.rs
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const TEST_DATA: &'static str = "498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9\n";
+    const TEST_DATA: &str = "498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9\n";
 
     #[test]
     fn test_part1() {
-        let res = parse_indata(&TEST_DATA).ok().unwrap().1;
+        let res = parse_indata(TEST_DATA).ok().unwrap().1;
         assert_eq!(2, res.len());
         assert_eq!(vec!((498,4),(498,6),(496,6)), res[0]);
         assert_eq!(vec!((503,4),(502,4),(502,9),(494,9)), res[1]);
 
         let cave = Cave::from(&res);
-        assert_eq!(20, cave.data.iter().count());
+        assert_eq!(20, cave.data.len());
 
         draw_cave(&cave);
     }

@@ -34,7 +34,7 @@ fn next_coord(head: &Coord, tail: &Coord) -> Coord {
     let dy = head.y - tail.y;
     let stay = dx.abs() <=1 && dy.abs() <= 1;
 
-    return if stay {
+    if stay {
         Coord { ..*tail }
     } else {
         Coord {x: tail.x + dx.signum(), y: tail.y + dy.signum() }
@@ -46,7 +46,7 @@ fn modify_knots(nr: i32, knots: &mut Vec<Coord>, f: fn(c:Coord, nr: i32) -> Coor
         for ix in 1..knots.len() {
             knots[ix] = next_coord(&knots[ix-1], &knots[ix]);
         }
-        res.insert(knots[knots.len()-1].clone());
+        res.insert(knots[knots.len()-1]);
     }
 }
 
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let test_data: &'static str = indoc! {r#"
+        let test_data: &str = indoc! {r#"
         R 4
         U 4
         L 3
@@ -97,7 +97,7 @@ mod tests {
         R 2
         "#
         };
-            let commands = parse_indata(&test_data);
+            let commands = parse_indata(test_data);
         let res = play_commands(&commands, 2);
         assert_eq!(13, res.len());
     }
@@ -115,7 +115,7 @@ mod tests {
         U 20
         "#
         };
-        let commands = parse_indata(&test_data);
+        let commands = parse_indata(test_data);
         let res = play_commands(&commands, 10);
         assert_eq!(36, res.len());
     }

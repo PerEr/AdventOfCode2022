@@ -2,7 +2,7 @@ use regex::Regex;
 
 use std::fs;
 
-fn parse_indata<'a>(indata: &'a str) -> Vec<(i32, i32, i32, i32)> {
+fn parse_indata(indata: &str) -> Vec<(i32, i32, i32, i32)> {
     Regex::new(r"(\d+)-(\d+),(\d+)-(\d+)")
         .unwrap()
         .captures_iter(indata)
@@ -34,8 +34,8 @@ fn some_overlap(d: &(i32, i32, i32, i32)) -> bool {
     }
 }
 
-fn process(data: &Vec<(i32, i32, i32, i32)>, f: fn(&(i32, i32, i32, i32)) -> bool) -> usize {
-    data.iter().filter(|d| f(*d)).count()
+fn process(data: &[(i32, i32, i32, i32)], f: fn(&(i32, i32, i32, i32)) -> bool) -> usize {
+    data.iter().filter(|d| f(d)).count()
 }
 
 fn main() {
@@ -50,7 +50,7 @@ mod tests {
     use super::*;
     use indoc::indoc;
 
-    const TEST_DATA: &'static str = indoc! {r#"
+    const TEST_DATA: &str = indoc! {r#"
     2-4,6-8
     2-3,4-5
     5-7,7-9
@@ -62,14 +62,14 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        let data = parse_indata(&TEST_DATA);
+        let data = parse_indata(TEST_DATA);
         let score = process(&data, complete_overlap);
         assert_eq!(2, score);
     }
 
     #[test]
     fn test_part2() {
-        let data = parse_indata(&TEST_DATA);
+        let data = parse_indata(TEST_DATA);
         let score = process(&data, some_overlap);
         assert_eq!(4, score);
     }
